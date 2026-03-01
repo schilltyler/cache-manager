@@ -247,54 +247,61 @@ def run_cache():
         open_lines = []
 
         # keep track of index of oldest line (we will evict this onefirst
-        oldest_touch = 0
+        oldest_touch = 1000000
         oldest_line_index = 0
+
+        hit_miss = ''
+        empty_evict = ''
 
         for i in range(0, len(lines)):
             # look for a hit
-            #print(f"DEBUG#######: {lines[i][0]}")
-            #print(f"DEBUG#######: {lines[i][2]}")
             if lines[i][0] == 1 and lines[i][1] == tag:
                 # Hit!
                 g_hits += 1
                 hit_miss = 'hit'
-                empty_evict = ''
                 line = i
-
-                # update cache accordingly
-                lines[i][2] = g_iteration
                 
-                # print if verbose output is set
-                if g_verbose == 'yes':
-                    print_verbose_output(data_instruction, address, tag, set_, lines, hit_miss, empty_evict, line)
+                # we got a hit, no need to do anymore searching
+                break;                
 
             elif lines[i][0] == 0:
                 open_lines.append(i)
-                print(f"DEBUG#####: {oldest_touch}")
+                #print(f"DEBUG#####: {oldest_touch}")
+            else:
                 if lines[i][2] < oldest_touch:
+                    oldest_touch = lines[i][2]
                     oldest_line_index = i
 
-        # Miss!
-        g_misses += 1
-        hit_miss = 'miss'
+        # did we find a hit?
+        if hit_miss == 'hit':
+            # just change the last time this line was touched
+            lines[i][2] = g_iteration
 
-        if len(open_lines) > 0:
-            empty_evict = 'empty'
-            line = open_lines[0]
-
-            print_verbose_output(data_instruction, address, tag, set_, lines, hit_miss, empty_evict, line)
-
-            # update cache accordingly
-            g_cache[set_][line] = [1, tag, g_iteration]
+            if g_verbose == 'yes':
+                print_verbose_output(data_instruction, address, tag, set_, lines, hit_miss, empty_evict, line)
 
         else:
-            empty_evict = 'evict'
-            line = oldest_line_index
+            # Miss!
+            g_misses += 1
+            hit_miss = 'miss'
 
-            print_verbose_output(data_instruction, address, tag, set_, lines, hit_miss, empty_evict, line)
+            if len(open_lines) > 0:
+                empty_evict = 'empty'
+                line = open_lines[0]
 
-            # update cache accordingly
-            g_cache[set_][line] = [1, tag, g_iteration]
+                print_verbose_output(data_instruction, address, tag, set_, lines, hit_miss, empty_evict, line)
+
+                # update cache accordingly
+                g_cache[set_][line] = [1, tag, g_iteration]
+
+            else:
+                empty_evict = 'evict'
+                line = oldest_line_index
+
+                print_verbose_output(data_instruction, address, tag, set_, lines, hit_miss, empty_evict, line)
+
+                # update cache accordingly
+                g_cache[set_][line] = [1, tag, g_iteration]
 
         # we have just gone through another iteration
         g_iteration += 1
