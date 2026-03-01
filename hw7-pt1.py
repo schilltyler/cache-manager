@@ -195,8 +195,8 @@ def setup_cache():
             g_cache.append(set_)
 
     elif g_cache_type == 'four-way-set-associative':
-        g_tagmask = hex(0xffffff00)
-        g_setmask = hex(0x000000f0)
+        g_tagmask = hex(0xfffffff0)
+        g_setmask = hex(0x0000000f)
 
         for i in range(0, 16):
             set_ = []
@@ -205,7 +205,7 @@ def setup_cache():
             g_cache.append(set_)
 
     else:
-        g_tagmask = hex(0xfffffff0)
+        g_tagmask = hex(0xffffffff)
         g_setmask = hex(0x00000000)
 
         for i in range(0, 64):
