@@ -159,6 +159,8 @@ def print_verbose_output(data_instruction, address, tag, set_, lines, hit_miss, 
 g_cache = []
 g_tagmask = 0x0
 g_setmask = 0x0
+g_tagshift = 0
+g_setshift = 0
 g_hits = 0
 g_misses = 0
 
@@ -166,6 +168,8 @@ def setup_cache():
     global g_cache
     global g_tagmask
     global g_setmask
+    global g_tagshift
+    global g_setshift
 
     set_ = []
     # Structure:
@@ -174,8 +178,10 @@ def setup_cache():
 
     if g_cache_type == 'direct-mapped':
         # setup masks
-        g_tagmask = hex(0xffffffc0)
-        g_setmask = hex(0x0000003f)
+        g_tagmask = hex(0xfffffc00)
+        g_setmask = hex(0x000003f0)
+        g_tagshift = 10
+        g_setshift = 4
 
         for i in range(0, 64):
             # Structure:
@@ -185,8 +191,10 @@ def setup_cache():
             set_ = []
 
     elif g_cache_type == 'two-way-set-associative':
-        g_tagmask = hex(0xffffffe0)
-        g_setmask = hex(0x0000001f)
+        g_tagmask = hex(0xfffffe00)
+        g_setmask = hex(0x000001f0)
+        g_tagshift = 9
+        g_setshift = 4
 
         for i in range(0, 32):
             set_ = []
@@ -195,8 +203,10 @@ def setup_cache():
             g_cache.append(set_)
 
     elif g_cache_type == 'four-way-set-associative':
-        g_tagmask = hex(0xfffffff0)
-        g_setmask = hex(0x0000000f)
+        g_tagmask = hex(0xffffff00)
+        g_setmask = hex(0x000000f0)
+        g_tagshift = 8
+        g_setshift = 4
 
         for i in range(0, 16):
             set_ = []
@@ -205,8 +215,10 @@ def setup_cache():
             g_cache.append(set_)
 
     else:
-        g_tagmask = hex(0xffffffff)
+        g_tagmask = hex(0xfffffff0)
         g_setmask = hex(0x00000000)
+        g_tagshift = 4
+        g_setshift = 0
 
         for i in range(0, 64):
             set_.append(data)
@@ -219,6 +231,8 @@ def run_cache():
     global g_iteration
     global g_tagmask
     global g_setmask
+    global g_tagshift
+    global g_setshift
     global g_hits
     global g_misses
 
@@ -238,7 +252,13 @@ def run_cache():
 
         # find tag and set
         tag = address & g_tagmask
+        # shift right to get 22-bit number
+        tag = tag >> g_tagshift
+
         set_ = address & g_setmask
+        # shift right to get 10 bit number
+        set_ = set_ >> g_setshift
+
 
         # look at state of this part of cache
         lines = g_cache[set_]
@@ -288,8 +308,9 @@ def run_cache():
             if len(open_lines) > 0:
                 empty_evict = 'empty'
                 line = open_lines[0]
-
-                print_verbose_output(data_instruction, address, tag, set_, lines, hit_miss, empty_evict, line)
+                
+                if g_verbose == 'yes':
+                    print_verbose_output(data_instruction, address, tag, set_, lines, hit_miss, empty_evict, line)
 
                 # update cache accordingly
                 g_cache[set_][line] = [1, tag, g_iteration]
@@ -297,8 +318,9 @@ def run_cache():
             else:
                 empty_evict = 'evict'
                 line = oldest_line_index
-
-                print_verbose_output(data_instruction, address, tag, set_, lines, hit_miss, empty_evict, line)
+                
+                if g_verbose == 'yes':
+                    print_verbose_output(data_instruction, address, tag, set_, lines, hit_miss, empty_evict, line)
 
                 # update cache accordingly
                 g_cache[set_][line] = [1, tag, g_iteration]
